@@ -1,14 +1,195 @@
 \section{Крыловские методы решения систем уравнений}
 \label{sec:Chapter2} \index{Chapter2}
+Как уже было сказано рассматриваемые нами методы базируются на пространстве Крылова,
+давайте определим его.
+\newtheorem{definition}{Определение}
+\begin{definition}
+    Пусть $A$ - матрица порядка $N$, $v$ - вектор размерности $N$. Тогда линейная
+    оболочка вида $K_m\left(A,v\right) \equiv \{v,Av,A^2v,...,A^{m-1}v\} $ называется 
+    подпространством Крылова, где $m$ - натуральное число. 
+\end{definition}
+{\color{red}Все рассматриваемые в дальнейшем методы являются проекционными процессами. Их суть
+заключается в том, что приближенное решение ищется в каком-то подпространстве }
+\subsection{Процедура Арнольди}
+Процедура Арнольди - это алгоритм построения ортогонального базиса в крыловском
+подпространстве $K_m$. Алгоритм \ref{alg:arnoldi} представляет наиболее простую
+вариацию такого алгоритма в точной арифметике.
+\begin{algorithm}
+    \caption{Алгоритм Арнольди}\label{alg:arnoldi}
+    \begin{algorithmic}[1]
+    \State Выберем $v_1 = v / \|v\|_2$, так что $\|v_1\|_2 = 1$
+    \Statex
+    \For{$j = 1, 2, \ldots, m$}
+        \For{$i = 1, 2, \ldots, j$}
+            \State $h_{ij} \gets (Av_j, v_i)$
+        \EndFor
+        \State $w_j \gets Av_j - \sum_{i=1}^j h_{ij}v_i$
+        \State $h_{j+1,j} \gets \|w_j\|_2$
+        \If{$h_{j+1,j} = 0$}
+            \State \textbf{Stop}
+        \EndIf
+        \State $v_{j+1} \gets w_j/h_{j+1,j}$
+    \EndFor
+    \end{algorithmic}
+\end{algorithm}
+По сути алгоритм на каждом шаге ортогонализует $Av_j$ ко всем предыдущим $v_i$, 
+применяя процедуру Грама-Шмидта. 
+\par Результат работы алгоритма можно записать в матричном
+виде: обозначим $V_m$ - $N \times m$ матрицу со столбцами $v_1,...,v_m$; 
+$\overline{H}_m$ - $\left(m+1\right) \times \left( m \right)$  хессенбергова матрица с 
+элементами $h_{ij}$ из алгоритма \ref{alg:arnoldi}; ${H}_m$ - $ m \times m $ матрица, 
+получающаяся из $\overline{H}_m$ путем удаления последней строки. Тогда, процедура Арнольди
+влечет следующие соотношения:
+\begin{align}
+    AV_m &= V_m H_m + w_m e_m^T \\
+         &= V_{m+1} \overline{H}_m,\\
+    V_m^T A V_m &= H_m \label{eq:VAVHM}
+\end{align} 
+\subsection{Симметричный алгоритм Ланцоша}
+Симметричный алгоритм Ланцоша - это частный случай процедуры Арнольди, когда матрица 
+$A$ - симметричная, при таком условии хессенбергова матрица $H_m$ становится симметричной
+тридиагональной $T_m$. Это позволяет получить короткие итерационные соотношения в теле Алгоритма \ref{alg:lanczos} 
+\begin{algorithm}
+    \caption{Симметричный алгоритм Ланцоша}\label{alg:lanczos}
+    \begin{algorithmic}[1]
+    \State Выберем $v_1 = v / \|v\|_2$, так что $\|v_1\|_2 = 1$
+    \State $\beta_1 \gets 0$, $v_0 \gets 0$
+    \For{$j = 1, 2, \ldots, m$}
+        \State $w_j \gets Av_j - \beta_j v_{j-1}$
+        \State $\alpha_j \gets (w_j, v_j)$
+        \State $w_j \gets w_j - \alpha_j v_j$
+        \State $\beta_{j+1} \gets \|w_j\|_2$
+        \If{$\beta_{j+1} = 0$}
+            \State \textbf{Stop}
+        \EndIf
+        \State $v_{j+1} \gets w_j / \beta_{j+1}$
+    \EndFor
+    \end{algorithmic}
+    \end{algorithm} 
 
-Здесь надо рассмотреть все существующие решения поставленной задачи, но не
-просто пересказать, в чем там дело, а оценить степень их соответствия тем
-ограничениям, которые были сформулированы в постановке задачи.
+При этом матрица $T_m$ имеет вид: 
+\begin{equation}
+T_m = \begin{pmatrix}
+\alpha_1 & \beta_2 & & & \\
+\beta_2 & \alpha_2 & \beta_3 & & \\
+& \beta_3 & \ddots & \ddots & \\
+& & \ddots & \alpha_{m-1} & \beta_m \\
+& & & \beta_m & \alpha_m
+\end{pmatrix}
+\label{eq:T_m}
+\end{equation}
 
 \subsection{Метод сопряженных градиентов}
-[YOUSEF SAAD ITERATIVE METHODS FOR SPARSE LINEAR SYSTEMS SECOND EDITION]
+Симметричный алгоритм Ланцоша можно использовать для итеративного решения систем
+линейных уравнений с симметричной положительно определенной матрицей.
+\par Пусть задано начальное приближение $x_0$, и векторы направлений из алгоритма
+Ланцоша $v_i,\;i=1,...,m$.
+На $m$-ом шаге алгоритма приближенное решение ищется в аффинном пространстве $x_0 + K_m$, 
+где $K_m\left(A,r_0\right) \equiv \{r_0,Ar_0,A^2r_0,...,A^{m-1}r_0\}, \; r_0 = b - Ax_0$.
+На невязки при этом налагается условие 
+\begin{equation}
+    \label{eq:galerkin}
+    b-Ax_m \perp K_m.
+\end{equation}
+Если взять $v_1 = r_0/\|r_0\|_2$ и 
+обозначить $\beta = \|r_0\|_2$. Тогда $V_m^TAV_m = T_m$ из \eqref{eq:VAVHM}, а также $V_m^Tr_0 = V_m^T(\beta v_1)=\beta e_1$.
+Разложим приближенное решение на $m$-ом шаге по базису из векторов $v_i,\;i=1,...,m$:
+\begin{equation}
+    x_m = x_0 + V_m y_m.
+\end{equation} 
+Это выражение эквивалентно равенству:
+ \begin{equation}
+    r_m = r_0 - AV_m y_m, 
+ \end{equation}
+домножим слева на $V_m^T$:
+\begin{equation}
+    \label{eq:VTreqVTr0VAVy}
+    V_m^T r_m = V_m^T r_0 - V_m^T AV_m y_m.
+\end{equation}
+Из \eqref{eq:galerkin} следует, что $ V_m^T r_m = 0 $, учтём это в \eqref{eq:VTreqVTr0VAVy} 
+и выразим $y_m$:
+\begin{equation}
+    y_m = T_m^{-1} \beta e_1.
+\end{equation}
+
+\par Получим выражение дял $r_m$:
+\begin{align*}
+    r_m &= b - A(x_0 + V_m y_m) \\
+        &= r_0 - AV_m y_m \\
+        &= \beta v_1 - (V_m T_m + h_{m+1,m}v_{m+1}e_m^T)y_m \\
+        &= V_m \underbrace{(\beta e_1 - H_m y_m)}_{=0} - h_{m+1,m} e_m^T y_m v_{m+1}
+\end{align*}
+\begin{equation}
+    \label{eq:r_m_SL}
+    r_m = - h_{m+1,m} e_m^T y_m v_{m+1}.
+\end{equation}
+Из этого выражения следует, что $r_m \parallel v_{m+1}$, а значит, что невязки на каждом шаге ортогональны друг другу.
+
+\par Получим короткие итерационные соотношения для обновления приближенного решения $x_m$.
+LU-разложение матрицы $T_m$:
+\begin{equation*}
+    T_m = L_m U_m = 
+        \begin{pmatrix}
+        1 & & & & \\
+        \lambda_2 & 1 & & & \\
+        & \lambda_3 & \ddots & & \\
+        & & \ddots & 1 &  \\
+        & & & \lambda_m & 1
+        \end{pmatrix}
+        \begin{pmatrix}
+            \eta_1 & \beta_2 & & & \\
+             & \eta_2 & \beta_3 & & \\
+            & & \ddots & \ddots & \\
+            & & & \eta_{m-1} & \beta_m \\
+            & & & & \eta_m
+        \end{pmatrix}
+\end{equation*} 
+Введем обозначения
+\begin{align}
+    P_m &\equiv V_m U_m^{-1}, \label{eq:P_m}\\
+    z_m &\equiv L_m^{-1} \beta e_1,
+\end{align}
+тогда приближенное решение выражается как
+\begin{equation}
+    x_m = x_0 + P_m z_m.
+\end{equation}
+Используя равенство \eqref{eq:P_m} получим формулу для обновления $p_m$-последнего
+столбца $p_m$ матрицы $P_m$
+\begin{align*}
+    &P_m U_m = V_m \\
+    &p_m \eta_m + \beta_m p_{m-1} = v_m \\
+    &p_m = \eta_m^{-1} \left( v_m - \beta_m p_{m-1} \right)
+\end{align*}
+Выразим элементы из последней строчки матрицы $T_m$ с помощью LU-разложения:
+\begin{align*}
+    \alpha_m = \lambda_m \beta_m + \eta_m &\implies \eta_m = \alpha_m - \lambda_m \beta_m \\
+    \beta_m = \lambda_m \eta_{m-1} &\implies \lambda_m = \beta_m / \eta_{m-1}
+\end{align*}
+В силу вида матрицы $L_m$:
+\begin{align*}
+    z_m &= 
+    \begin{pmatrix}
+        z_{m-1} \\
+        \zeta_m
+    \end{pmatrix}, \\
+    \zeta_m &= -\lambda_m \zeta_{m-1}. 
+\end{align*}
+Как результат получаем формулу для обновления $x_m$:
+\begin{equation*}
+    x_m = x_{m-1} + \zeta_m p_m
+\end{equation*}
+Покажем, что столбцы $P_m$ образуют А-ортогональную систему, т.е, что $(Ap_i,p_j) = 0$, для $i \neq j$.
+Для этого нужно показать, что $P_m^T AP_m$ - диагональная матрица. Подставим определение $P_m$ в это выражение:
+\begin{align}
+    P_m^T AP_m &= U_m^{-T}V_m^T AV_m U_m^{-1} \\
+               &= U_m^{-T}T_m U_m^{-1} \\
+               &=U_m^{-T}L_m
+\end{align}
+$U_m^{-T}L_m$ - нижнетреугольная матрица, но она также является и симметричной, 
+так как $P_m^T AP_m$ - симметричная матрица. Таким образом, $U_m^{-T}L_m$ - диагональная матрица.
+\cite{Saad2003} 
 \subsection{Метод бисопряженных градиентов}
-[YOUSEF SAAD ITERATIVE METHODS FOR SPARSE LINEAR SYSTEMS SECOND EDITION]
+\cite{Saad2003}
 \subsection{Стабилизированный метод бисопряженных градиентов}
 \cite{doi:10.1137/0913035}
 \subsection{Блочный метод сопряженных градиентов}
@@ -20,6 +201,7 @@
 \subsubsection{Матричнозначные полиномы}
  \par Проблемы со сходимостью метода из \cite{elGuennouni2003}, демонстрация в 4 главе, решение проблемы в 3 главе.
  \subsubsection{Алгоритм}
+ \subsection{Блочный симметричный метод квазиминимальных невязок}
 
 
 \newpage
