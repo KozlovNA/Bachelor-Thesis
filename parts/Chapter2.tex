@@ -209,13 +209,13 @@ $U_m^{-T}L_m$ - нижнетреугольная матрица, но она т�
 \begin{algorithm}
     \caption{Метод сопряженных градиентов}
     \begin{algorithmic}[1]
-    \State $r_0 := b - A x_0$, $p_0 := r_0$.
+    \State $r_0 \gets b - A x_0$, $p_0 \gets r_0$.
     \For{$j = 0, 1, \ldots$}
-        \State $\alpha_j := (r_j, r_j) / (A p_j, p_j)$
-        \State $x_{j+1} := x_j + \alpha_j p_j$
-        \State $r_{j+1} := r_j - \alpha_j A p_j$
-        \State $\beta_j := (r_{j+1}, r_{j+1}) / (r_j, r_j)$
-        \State $p_{j+1} := r_{j+1} + \beta_j p_j$
+        \State $\alpha_j \gets (r_j, r_j) / (A p_j, p_j)$
+        \State $x_{j+1} \gets x_j + \alpha_j p_j$
+        \State $r_{j+1} \gets r_j - \alpha_j A p_j$
+        \State $\beta_j \gets (r_{j+1}, r_{j+1}) / (r_j, r_j)$
+        \State $p_{j+1} \gets r_{j+1} + \beta_j p_j$
     \EndFor
     \end{algorithmic}
     \end{algorithm}
@@ -226,6 +226,41 @@ $Ax=b$ на $A^T$, и решать систему с симметричной п
 давать плохие результаты.
 \cite{Saad2003} 
 \subsection{Процесс биортогонализации Ланцоша}
+Для несимметричных систем можно предъявить алгоритм похожий на симметричный алгоритм Ланцоша,
+но который будет строить не ортогональный базис в пространстве Крылова, а пару биортогональных
+базисов в пространствах $K_m(A, v_1) = span\{v_1,Av_1,...,A^{m-1}v_1\}$ и $K_m(A^T, v_1) = span\{v_1,A^Tv_1,...,(A^T)^{m-1}v_1\}$.
+\begin{algorithm}
+    \caption{Процесс биортогонализации Ланцоша}
+    \begin{algorithmic}[1]
+    \State Выберем $v_{1}, w_{1}$ такие что $(v_{1}, w_{1}) = 1$.
+    \State $\beta_{1} = \delta_{1} \equiv 0$, $w_{0} = v_{0} \equiv 0$
+    \For{$j = 1, 2, \ldots, m$}
+        \State $\alpha_{j} = (A v_{j}, w_{j})$
+        \State $\hat{v}_{j+1} = A v_{j} - \alpha_{j} v_{j} - \beta_{j} v_{j-1}$
+        \State $\hat{w}_{j+1} = A^{T} w_{j} - \alpha_{j} w_{j} - \delta_{j} w_{j-1}$
+        \State $\delta_{j+1} = |(\hat{v}_{j+1}, \hat{w}_{j+1})|^{1/2}$
+        \If{$\delta_{j+1} = 0$}
+            \State Stop
+        \EndIf
+        \State $\beta_{j+1} = (\hat{v}_{j+1}, \hat{w}_{j+1}) / \delta_{j+1}$
+        \State $v_{j+1} = \hat{v}_{j+1} / \beta_{j+1}$
+        \State $w_{j+1} = \hat{w}_{j+1} / \delta_{j+1}$
+    \EndFor
+    \end{algorithmic}
+    \end{algorithm}
+
+Введём обозначение 
+\begin{equation}
+    T_m = 
+    \begin{pmatrix}
+        \alpha_1 & \beta_2 & & & \\
+        \delta_2 & \alpha_2 & \beta_3 & & \\
+        & \delta_3 & \ddots & \ddots & \\
+        & & \ddots & \alpha_{m-1} & \beta_m \\
+        & & & \delta_m & \alpha_m
+    \end{pmatrix}
+\end{equation}
+
 \subsection{Метод бисопряженных градиентов}
 
 \cite{Saad2003}
