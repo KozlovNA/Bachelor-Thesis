@@ -3,24 +3,31 @@
 
 \par Один из ключевых элементов блочного симметричного метода квазиминимальных невязок \cite{doi:10.1137/0917019}
 является процесс Грамма-Шмидта с квазискалярным произведением. Далее будет представлена модификация 
-этого алгоритма, использующая настоящее QR-разложение. Тогда откроется возможности для более устойчивых реализаций
-QR-разложения и их библиотечным реализациям, а также к нескольким новым свойствам невязок.
+этого алгоритма, использующая настоящее QR-разложение. Благодаря этому невязка на 
+шаге алгоритма окажется ближе к настоящей невязке. Немаловажжно и то, что квази-QR 
+в некотором роде эквивалентно $LL^T$ разложению матрицы $V^T V$, причём это разложение
+выполняется без выбора ведущего элемента. В отличие от разложения Холецкого, для которого из-за
+положительной определенности матрицы следует, что все ведущие миноры положительно определены и 
+обусловлены не хуже, чем вся матрица, и поэтому для него выбор ведущего элемента не так существенен,
+здесь это является проблемой, поэтому важно модифицировать алгоритм, не использующим квази-QR-разложение. 
+В дополнение ко всему вышесказанному, при этом становится возможным использование 
+устойчивых реализаций QR-разложения и применение их библиотечных реализаций.
 
 \par Блочный симметричный процесс Ланцоша приводит к следующему матричному соотношению:
 \begin{equation}
     \label{eq:bsqmr_AVeqT}
-    A \begin{pmatrix}
+    A \begin{bmatrix}
         V_1 & ... & V_k & V_{k+1} 
-    \end{pmatrix} = \begin{pmatrix}
+    \end{bmatrix} = \begin{bmatrix}
         V_1 & ... & V_k & V_{k+1} 
-    \end{pmatrix} \begin{pmatrix}
+    \end{bmatrix} \begin{bmatrix}
         \alpha_1 & \delta_1 & & & \\
         \beta_2 & \alpha_2 & \delta_2 & & \\
         & \beta_3 & \ddots & \ddots & \\
         & & \ddots & \alpha_{k-1} & \delta_{k-1} \\
         & & & \beta_k & \alpha_k \\
         & & & & \beta_{k+1}
-    \end{pmatrix},
+    \end{bmatrix},
 \end{equation} 
 где $\delta_{i-1} = \beta_i^T$ в версии из статьи \cite{doi:10.1137/0917019}, в нашей
 модификации же получится другой вид для этой матрицы коэффициентов. Из \eqref{eq:bsqmr_AVeqT} для $k$-го блока следует: 
@@ -69,6 +76,7 @@ V_i^TV_j=0,\;i \neq j
 предлагаемой модификации $\beta_{k+1}$ выбрано таким, чтобы выполнялось соотношение
 $V_{k+1}^* V_{k+1} = I$, где $I$ - единичная $s \times s$ матрица. Этого можно достичь с помощью QR-разложения:
 \begin{equation}
+    \label{eq:Vkp1betakp1QR}
     V_{k+1}, \beta_{k+1} \xleftarrow{QR} A V_k - V_{k-1} \delta_{k-1} - V_k \alpha_k. 
 \end{equation} 
 Этот выбор обладает рядом преимуществ: \begin{enumerate}
@@ -76,12 +84,47 @@ $V_{k+1}^* V_{k+1} = I$, где $I$ - единичная $s \times s$ матри
     \item на первой итерации алгоритм ведёт себя как обобщённый метод минимальных невязок, что обеспечивает на первой итерации достижение точного минимума невязки в построенном к этому моменту пространстве Крылова, что в свою очередь предотвращает большие скачки невязки на первых итерациях, как это наблюдается в алгоритме из статьи \cite{doi:10.1137/0917019}.
 \end{enumerate}  
 
-Но предлагаемый алгоритм обладает и рядом недостатков:
-\begin{enumerate}
-    \item В задаче электромагнитного рассеяния на миндалевидном теле, дискретизированном методом интегральных уравнений \cite{stavtsev2009application} метод не сходится до требуемого порога в арифметике с одинарной точностью. 
-\end{enumerate}
+% Но предлагаемый алгоритм обладает и рядом недостатков:
+% \begin{enumerate}
+%     \item В задаче электромагнитного рассеяния на миндалевидном теле, дискретизированном методом интегральных уравнений \cite{stavtsev2009application} метод не сходится до требуемого порога в арифметике с одинарной точностью. 
+% \end{enumerate}
 
-Окончательный вид алгоритма:
+Однако с этими изменениями метод все еще не сходится в задаче электромагнитного 
+рассеяния \cite{stavtsev2009application} в одинарной точности, поэтому необходимо 
+получить более устойчивые формулы для рекуррентных соотношений. 
+
+\par Для этого можно производить квази-реортогонализацию для поддержания соотношения \eqref{eq:VTVeq0}.
+Поправка к $V_{k+1}$:
+\begin{equation}
+    \label{eq:tildeVkp1}
+    V_{k+1} = V_{k-1} \tilde{\delta}_{k-1} + V_k \tilde{\alpha}_k + \tilde{V}_{k+1} \tilde{\beta}_{k+1},
+\end{equation}
+где $\tilde{V}_{k+1}$ - более точно вычисленный блок $V_{k+1}$. Используя \eqref{eq:VTVeq0}, получим формулы для поправок:
+\begin{align}
+    \tilde{\delta}_{k-1} &= \gamma_{k-1}^{-1} V_{k-1}^T V_{k+1} \label{eq:deltatilda} \\
+    \tilde{\alpha}_{k}   &= \gamma_{k}^{-1} V_{k}^T V_{k+1} \label{eq:alphatilda} \\
+    \tilde{V}_{k+1} \tilde{\beta}_{k+1} &\xleftarrow{QR} V_{k+1} - V_{k-1} \tilde{\delta}_{k-1} - V_{k} \tilde{\alpha}_k \label{rq:betatilda}
+\end{align}
+Подставим \eqref{eq:tildeVkp1} в \eqref{eq:bsqmr_last_block}:
+\begin{equation}
+    \label{eq:bsqmriterreorth}
+    AV_{k} = V_{k-1} ( \delta_{k-1} + \tilde{\delta}_{k-1} \beta_{k+1}) + V_k (\alpha_k + \tilde{\alpha}_k \beta_{k+1}) + \tilde{V}_{k+1} \beta_{k+1} \tilde{\beta}_{k+1}
+\end{equation} 
+Таким образом, матрицы коэффициентов после реортогонализации имеют вид:
+\begin{align}
+    \delta_{k-1}^r &= \delta_{k-1} + \tilde{\delta}_{k-1} \beta_{k+1} \\
+    \alpha_{k}^r   &= \alpha_k + \tilde{\alpha}_k \beta_{k+1} \\
+    \beta_{k+1}^r  &= \beta_{k+1} \tilde{\beta}_{k+1}
+\end{align}
+Также предлагается перед рассмотренной квази-реортогонализацией провести реортогонализацию для
+QR-разложения \eqref{eq:Vkp1betakp1QR} стандартным образом: 
+\begin{align}
+    V_{k+1}, \beta_{k+1} &\xleftarrow{QR} A V_k - V_{k-1} \delta_{k-1} - V_k \alpha_k \\
+    V_{k+1}^r, \tilde{\beta}_{k+1} &\xleftarrow{QR} V_{k+1} \\
+    \beta_{k+1}^r &= \tilde{\beta}_{k+1} \beta_{k+1}.
+\end{align}
+
+\par Окончательный вид алгоритма, красным отмечена процедура реортогонализации:
 \begin{algorithm}
     \caption{Модифицированный блочный симметричный метод квазиминимальных невязок}\label{alg:bsqmr_mod}
     \begin{algorithmic}
@@ -103,23 +146,33 @@ $V_{k+1}^* V_{k+1} = I$, где $I$ - единичная $s \times s$ матри
             \State $\alpha_k = \gamma_k^{-1} V_k^T \tilde{V}_{k+1}$
             \State $\tilde{V}_{k+1} = \tilde{V}_{k+1} - V_k \alpha_k$
             \State $ V_{k+1},\; \beta_{k+1} \xleftarrow{QR} \tilde{V}_{k+1} $
+            {\color{red}\State $ V_{k+1},\; \tilde{\beta}_{k+1} \xleftarrow{QR} V_{k+1}$
+            \State $ \beta_{k+1} \gets \tilde{\beta}_{k+1} \beta_{k+1} $
+            \State $\tilde{\alpha}_k = \gamma_k^{-1} V_k^T V_{k+1}$
+            \State $ \alpha_k \gets \alpha_k + \tilde{\alpha}_k \beta_{k+1} $
+            \State $ V_{k+1} \gets V_{k+1} - V_k \tilde{\alpha}_k $
+            \State $ \tilde{\delta}_{k-1} = \gamma_{k-1}^{-1} V_{k-1}^T V_{k+1} $
+            \State $ \delta_{k-1} \gets \delta_{k-1} + \tilde{\delta}_{k-1} \beta_{k+1} $ 
+            \State $ V_{k+1} \gets V_{k+1} - V_{k-1} \tilde{\delta}_{k-1} $
+            \State $ V_{k+1}, \; \tilde{\beta}_{k+1} \xleftarrow{QR} V_{k+1} $
+            \State $ \beta_{k+1} \gets \tilde{\beta}_{k+1} \beta_{k+1} $}
             \State $\gamma_{k+1} = V_{k+1}^T V_{k+1}$
             % \State {\color{red} $\omega_{k+1} = I$}
             \State $\theta_k = b_{k-2} \delta_{k-1}$
             \State $\eta_k = a_{k-1}d_{k-2}\delta_{k-1} + b_{k-1}\alpha_k$
             \State $\tilde{\zeta}_k = c_{k-1} d_{k-2} \delta_{k-1} + d_{k-1} \alpha_k$
             \State $ Q_k ,\; 
-                    \begin{pmatrix} 
+                    \begin{bmatrix}
                         \zeta_k \\
                         0_{s \times s}
-                    \end{pmatrix} \xleftarrow{QR} \begin{pmatrix}
+                    \end{bmatrix} \xleftarrow{QR} \begin{bmatrix}
                                         \tilde{\zeta}_k \\
                                         \omega_{k+1} \beta_{k+1}
-                                     \end{pmatrix}$
-            \State $\begin{pmatrix}
+                                     \end{bmatrix}$
+            \State $\begin{bmatrix}
                         a_k & b_k \\
                         c_k & d_k
-                    \end{pmatrix} \gets Q_k^*$
+                    \end{bmatrix} \gets Q_k^*$
             \State $V_k = (V_k - P_{k-1}\eta_k - P_{k-2} \theta_k)\zeta_k^{-1}$
             \State $\tau_k = a_k \tilde{\tau}_k$
             \State $X_k = X_{k-1} + P_{k} \tau_{k}$
@@ -127,6 +180,53 @@ $V_{k+1}^* V_{k+1} = I$, где $I$ - единичная $s \times s$ матри
         \EndFor
     \end{algorithmic}
 \end{algorithm}
+
+
+% \begin{algorithm}
+%     \caption{Модифицированный блочный симметричный метод квазиминимальных невязок}\label{alg:bsqmr_mod_2}
+%     \begin{algorithmic}
+%         \State $V_0 = P_{0} = P_{-1} = 0_{N \times s}$, $N$ - размер матрицы $A$, $s$ - количество правых частей.
+%         \State $c_0 = b_{-1} = b_0 = 0_{s \times s}$
+%         \State $a_0 = d_{-1} = d_0 = I_{s \times s}$
+%         \State $R_0 = B - AX_0$
+%         \State $V_1,\; \beta_1 \xleftarrow{QR} R_0 $
+%         \State $\gamma_{0} = I_{s \times s}$
+%         \State $\gamma_{1} = V_1^T V_1$
+%         % {\color{red}
+%         % \State $\omega_{-1} = 0_{m \times m}$
+%         % \State $\omega_0 = I$
+%         % }
+%         \State $\tilde{\tau}_1 = \beta_1 $
+%         \For {$k = 1, ... $}
+%             \State $\delta_{k-1} = \gamma_{k-1}^{-1} \beta_k^T \gamma_k $
+%             \State $\tilde{V}_{k+1} = AV_k - V_{k-1} \delta_{k-1}$
+%             \State $\alpha_k = \gamma_k^{-1} V_k^T \tilde{V}_{k+1}$
+%             \State $\tilde{V}_{k+1} = \tilde{V}_{k+1} - V_k \alpha_k$
+%             \State $ V_{k+1},\; \beta_{k+1} \xleftarrow{QR} \tilde{V}_{k+1} $
+%             \State $\gamma_{k+1} = V_{k+1}^T V_{k+1}$
+%             % \State {\color{red} $\omega_{k+1} = I$}
+%             \State $\theta_k = b_{k-2} \delta_{k-1}$
+%             \State $\eta_k = a_{k-1}d_{k-2}\delta_{k-1} + b_{k-1}\alpha_k$
+%             \State $\tilde{\zeta}_k = c_{k-1} d_{k-2} \delta_{k-1} + d_{k-1} \alpha_k$
+%             \State $ Q_k ,\; 
+%                     \begin{bmatrix} 
+%                         \zeta_k \\
+%                         0_{s \times s}
+%                     \end{bmatrix} \xleftarrow{QR} \begin{bmatrix}
+%                                         \tilde{\zeta}_k \\
+%                                         \omega_{k+1} \beta_{k+1}
+%                                      \end{bmatrix}$
+%             \State $\begin{bmatrix}
+%                         a_k & b_k \\
+%                         c_k & d_k
+%                     \end{bmatrix} \gets Q_k^*$
+%             \State $V_k = (V_k - P_{k-1}\eta_k - P_{k-2} \theta_k)\zeta_k^{-1}$
+%             \State $\tau_k = a_k \tilde{\tau}_k$
+%             \State $X_k = X_{k-1} + P_{k} \tau_{k}$
+%             \State $\tilde{\tau}_{k+1} = c_k \tilde{\tau}_k$
+%         \EndFor
+%     \end{algorithmic}
+% \end{algorithm}
 
 
 \newpage
