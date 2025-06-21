@@ -167,13 +167,13 @@ QR-разложения \eqref{eq:Vkp1betakp1QR} стандартным обра
                         0_{s \times s}
                     \end{bmatrix} \xleftarrow{QR} \begin{bmatrix}
                                         \tilde{\zeta}_k \\
-                                        \omega_{k+1} \beta_{k+1}
+                                        \beta_{k+1}
                                      \end{bmatrix}$
             \State $\begin{bmatrix}
                         a_k & b_k \\
                         c_k & d_k
                     \end{bmatrix} \gets Q_k^*$
-            \State $V_k = (V_k - P_{k-1}\eta_k - P_{k-2} \theta_k)\zeta_k^{-1}$
+            \State $P_k = (V_k - P_{k-1}\eta_k - P_{k-2} \theta_k)\zeta_k^{-1}$
             \State $\tau_k = a_k \tilde{\tau}_k$
             \State $X_k = X_{k-1} + P_{k} \tau_{k}$
             \State $\tilde{\tau}_{k+1} = c_k \tilde{\tau}_k$

@@ -727,5 +727,76 @@ $$Q_{k+1} \Omega_{k+1} \tilde{T}_k = \begin{bmatrix}
                                                           & & & & \zeta_k \\
                                                           & & & & 0
                                                       \end{bmatrix}$$ 
+Рекуретное обновление матрицы $Q_{k+1}$:
+$$Q_{k+1} = \begin{bmatrix}
+                I_{(k-1)s} & 0 \\
+                0          & Q(a_k,b_k,c_k,d_k)
+            \end{bmatrix} \begin{bmatrix}
+                                Q_k & 0 \\
+                                0   & I_s \\ 
+                            \end{bmatrix}, \text{ где } Q(a_k, b_k, c_k, d_k) = \begin{bmatrix}
+                                                                                    a_k & b_k \\
+                                                                                    c_k & d_k
+                                                                                \end{bmatrix} $$
+
+По унитарной инвариантности нормы Фробениуса, преобразуем квазиневязку:
+$$\| col_i \left( Q_{k+1} \omega_1 e_1 \beta_1 - \begin{bmatrix} R_k \\ 0 \end{bmatrix} Z_k \right) \|, \text{ для } i=1,...,m$$
+Чтобы минимизировать квазиневязку в таком виде, определим 
+$$ \tilde{t}_{k+1} = Q_{k+1} \omega_1 e_1 \beta_1 = \begin{bmatrix} t_k \\ \tilde{\tau}_{k+1} \end{bmatrix}, \text{ где } \tilde{\tau}_{k+1} \text{ - это } s \times s \text{ матрица.} $$ 
+и выбирем $Z_k$ как $Z_k = R_k^{-1} t_k$.
+
+Тогда квазиневязку можно вычислить с помощью $\tilde{\tau}_{k+1}$:
+$$QRES_k = max_i \| col_i (\tilde{\tau}_{k+1}) \|,$$
+а настоящая невязка определяется, как и в других рассмотренных блочных методах:
+$$RES_k = max_i \| col_i (AX_k - B) \|.$$
+
+Итоговый вид алгоритма:
+\begin{algorithm}
+    \caption{Блочный симметричный метод квазиминимальных невязок}
+    \begin{algorithmic}[1]
+        \State $V_0 = P_{0} = P_{-1} = 0_{N \times s}$, $N$ - размер матрицы $A$, $s$ - количество правых частей.
+        \State $c_0 = b_{-1} = b_0 = 0_{s \times s}$
+        \State $a_0 = d_{-1} = d_0 = I_{s \times s}$
+        \State $R_0 = B - AX_0$
+        \State $\tilde{V}_1 = R_0$
+        \State $V_1,\; \beta_1 \xleftarrow{квази-QR} \tilde{V}_1 $
+        \State $\omega_0 = 0_{s\times s}$
+        \State $\omega_1 = Diag\{ \| col_i (v_i) \| \}$
+        \State $\tilde{\tau}_1 = \omega_1 \beta_1$
+        \For {$k = 1, ... $}
+            \State $\tilde{V}_{k+1} = AV_k - V_{k-1} \beta^T_{k}$
+            \State $\alpha_k = V_k^T \tilde{V}_{k+1}$
+            \State $\tilde{V}_{k+1} = \tilde{V}_{k+1} - V_k \alpha_k$
+            \State $ V_{k+1},\; \beta_{k+1} \xleftarrow{квази QR} \tilde{V}_{k+1} $
+            \State $\omega_{k+1} = Diag\{ \| col_i (v_{k+1}) \| \}$
+            \State $\theta_k = b_{k-2} \omega_{k-1} \beta_k^T $
+            \State $\eta_k = a_{k-1}d_{k-2} \omega_{k-1} \beta^T_{k} + b_{k-1} \omega_k \alpha_k$
+            \State $\tilde{\zeta}_k = c_{k-1} d_{k-2} \omega_{k-1} \beta_{k}^T + d_{k-1} \omega_k \alpha_k$
+            \State $ Q_k ,\; 
+                    \begin{bmatrix}
+                        \zeta_k \\
+                        0_{s \times s}
+                    \end{bmatrix} \xleftarrow{QR} \begin{bmatrix}
+                                        \tilde{\zeta}_k \\
+                                        \omega_{k+1} \beta_{k+1}
+                                     \end{bmatrix}$
+            \State $\begin{bmatrix}
+                        a_k & b_k \\
+                        c_k & d_k
+                    \end{bmatrix} \gets Q_k^*$
+            \State $P_k = (V_k - P_{k-1}\eta_k - P_{k-2} \theta_k)\zeta_k^{-1}$
+            \State $\tau_k = a_k \tilde{\tau}_k$
+            \State $X_k = X_{k-1} + P_{k} \tau_{k}$
+            \State $\tilde{\tau}_{k+1} = c_k \tilde{\tau}_k$
+        \EndFor
+    \end{algorithmic}
+\end{algorithm}
+
+Однако, как будет показано в разделе \ref{sec:Chapter4} у этого метода есть ряд проблем:
+\begin{enumerate}
+    \item Возможен большой взлёт невязки на первых итерациях алгоритма.
+    \item Поддерживается квази-ортогональность внутри блока $V_i^TV_i$ - диагональная матрица. Вместо этого свойства было бы лучше поддерживать другое, например, обычную ортогональность внутри блока.  
+    \item Нет сходимости в арифметике с одинарной точностью в задаче электромагнитного рассеяния \cite{stavtsev2009application}, если брать все 722 правые части в блоке.
+\end{enumerate}
 
 \newpage
