@@ -130,7 +130,7 @@ QR-разложения \eqref{eq:Vkp1betakp1QR} стандартным обра
 \par Окончательный вид алгоритма, красным отмечена процедура реортогонализации:
 \begin{algorithm}[H]
     \caption{Модифицированный блочный симметричный метод квазиминимальных невязок}\label{alg:bsqmr_mod}
-    \begin{algorithmic}
+\begin{algorithmic}
         \State $V_0 = P_{0} = P_{-1} = 0_{N \times s}$, $N$ - размер матрицы $A$, $s$ - количество правых частей.
         \State $c_0 = b_{-1} = b_0 = 0_{s \times s}$
         \State $a_0 = d_{-1} = d_0 = I_{s \times s}$
@@ -147,6 +147,12 @@ QR-разложения \eqref{eq:Vkp1betakp1QR} стандартным обра
             \State $\delta_{k-1} = \gamma_{k-1}^{-1} \beta_k^T \gamma_k $
             \State $\tilde{V}_{k+1} = AV_k - V_{k-1} \delta_{k-1}$
             \State $\alpha_k = \gamma_k^{-1} V_k^T \tilde{V}_{k+1}$
+            \algstore{storebsqmr}
+            \end{algorithmic}
+            \end{algorithm}
+            \begin{algorithm}[H]
+            \begin{algorithmic}[1] 
+            \algrestore{storebsqmr}   
             \State $\tilde{V}_{k+1} = \tilde{V}_{k+1} - V_k \alpha_k$
             \State $ V_{k+1},\; \beta_{k+1} \xleftarrow{QR} \tilde{V}_{k+1} $
             {\color{red}\State $ V_{k+1},\; \tilde{\beta}_{k+1} \xleftarrow{QR} V_{k+1}$
